@@ -34,7 +34,7 @@ static int install_filter(int nr, int arch, int error) {
 }
 
 int main(int argc,char const *argv[]) {
-  printf("hey there!\n");
+  printf("Hello World!\n");
 
   install_filter(__NR_write, AUDIT_ARCH_X86_64, EPERM);
 

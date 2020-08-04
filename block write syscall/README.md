@@ -1,7 +1,7 @@
 
 # block write syscall
 
- This program uses seccomb BPF filter to block the write syscall.
+ This program uses seccomp BPF filter to block the write syscall.
 
  ## Usage
 Compile it 
@@ -48,7 +48,7 @@ and also
 [pid  3530] exit_group(2)               = ?
 ```
 
-referene:
+reference:
 1. [Lorenzo Fontana gist](https://gist.github.com/fntlnz/08ae20befb91befd9a53cd91cdc6d507).
 
 

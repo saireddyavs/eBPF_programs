@@ -131,8 +131,8 @@ def print_event(cpu, data, size):
             start = event.ts
     time_s = (float(event.ts - start)) / 1000000000
     s=str(event.comm)
-    if(s.find("terminal")!=-1):
-        print("%-18.9f %-16s %-6d %-20s %-5d %d" % (time_s, event.comm, event.pid,
+   
+    print("%-18.9f %-16s %-6d %-20s %-5d %d" % (time_s, event.comm, event.pid,
          "Hello, perf_output!",map_one.__getitem__(ct.c_uint32(event.pid)).value,map_two.__getitem__(map_two_s(event.comm)).value))
         
     

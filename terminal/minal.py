@@ -12,10 +12,15 @@ prog="""
 #include <linux/string.h>
 
 
+struct key_t {
+    char name[TASK_COMM_LEN];
+    
+};
 
+BPF_HASH(map_one,u32);
 
+BPF_HASH(map_two, struct key_t);
 
-BPF_HASH(map_three,u32,u32);
 
 struct data_t {
     u32 pid;
@@ -26,24 +31,20 @@ BPF_PERF_OUTPUT(perf_map);
 
 
 
-
 int do_trace(struct pt_regs *ctx){
 
 
+    u32 pid = bpf_get_current_pid_tgid()>>32;
     
 
 
-   
+    map_one.increment(pid);
 
-  
-
-  
     char comm[TASK_COMM_LEN];
 
-   
 
+    bpf_get_current_comm(&(comm), sizeof(comm));    
 
-    bpf_get_current_comm(&(comm), sizeof(comm));
 
 
 
@@ -53,10 +54,21 @@ int do_trace(struct pt_regs *ctx){
         if(!(comm[i]==b[i]))return 0;   
     }
 
+  
+
+
+    struct key_t key = {};
+
+    bpf_get_current_comm(&(key.name), sizeof(key.name));
+
+
+    
+
+
 
    
 
-  
+    map_two.increment(key);
 
     
 
@@ -65,23 +77,11 @@ int do_trace(struct pt_regs *ctx){
 
     data.pid = bpf_get_current_pid_tgid();
     data.ts = bpf_ktime_get_ns();
-
-
     bpf_get_current_comm(&data.comm, sizeof(data.comm));
 
 
-    struct task_struct *task;
-    struct task_struct *real_parent_task;
-    u32 ppid;
-
-    task = (struct task_struct *)bpf_get_current_task();
-
-    ppid=task->real_parent->tgid;
-
-
-
-
-
+    
+   
 
     perf_map.perf_submit(ctx, &data, sizeof(data));
 
@@ -94,6 +94,8 @@ int do_trace(struct pt_regs *ctx){
 
 
 }
+
+
 
 
 """;
@@ -109,14 +111,16 @@ b.attach_kprobe(event=b.get_syscall_fnname("execve"), fn_name="do_trace")
 
 
 
-
+map_one=b['map_one']
+map_two=b['map_two']
+print(map_one)
 
 class map_two_s(ct.Structure):
     _fields_ = [('name', ct.c_char*16)
                 ]
 
 
-print("%-18s %-16s %-6s %-20s " % ("TIME(s)", "COMM", "PID", "MESSAGE"))
+print("%-18s %-16s %-6s %-20s %-5s %s" % ("TIME(s)", "COMM", "PID", "MESSAGE","PNT","CNT"))
 
 
 start = 0
@@ -126,11 +130,10 @@ def print_event(cpu, data, size):
     if start == 0:
             start = event.ts
     time_s = (float(event.ts - start)) / 1000000000
-    s=str(event.ts)
-    print(s)
-    
-    print("%-18.9f %-16s %-6d %-20s " % (time_s, event.comm, event.pid,
-         "Hello, perf_output!"))
+    s=str(event.comm)
+    if(s.find("terminal")!=-1):
+        print("%-18.9f %-16s %-6d %-20s %-5d %d" % (time_s, event.comm, event.pid,
+         "Hello, perf_output!",map_one.__getitem__(ct.c_uint32(event.pid)).value,map_two.__getitem__(map_two_s(event.comm)).value))
         
     
         
